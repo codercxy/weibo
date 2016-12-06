@@ -1,0 +1,11 @@
+points: 
+ - name: '#1'
+   longt: 116.043093
+   lat: 39.591093
+ - name: '#2'
+   longt: 116.185277
+   lat: 39.591093
+
+starttime: '2014-09-01 12:00:00'
+endtime: '2014-09-01 13:00:00'
+threadNum: 2
