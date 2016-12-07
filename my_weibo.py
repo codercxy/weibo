@@ -17,6 +17,8 @@ import yaml
 import threading
 import Queue
 import datetime
+import calendar
+import pytz
 from dateutil.parser import parse
 #from http_helper import*
 #设置参数
@@ -129,14 +131,22 @@ def GetText(queue,lat,longt,startTime,endTime):
                 if index < 0:
                     break
                 try:             
+#                    dt = parse(lastData[index]['created_at'])
+#                    dt = pytz.utc.normalize(dt)
+#                    ts = calendar.timegm(dt.timetuple())
+#                    endTime = int(ts)
                     endTime = getTimeStamp(str(lastData[index]['created_at']))
 #                    endTime = int(time.mktime(parse(lastData[index]['created_at']).timetuple()))
                     pagenum=1
 #                    setLoginPara()
                     break
+                except ValueError:
+                    endTime = getTimeStamp(str(formatTime(lastData[index]['created_at'])))
+                    pagenum=1
+                    break
                 except Exception, e:
                     print e
-                    print lastData[index]['created_at']
+#                    print lastData[index]['created_at']
                     index = index - 1
                     continue
             if (endTime < startTime):
@@ -345,27 +355,35 @@ class DataThread(threading.Thread):
 def saveToExcel(queue):
     goon = True
     while goon:
-        print "queueNUm"+str(queue.qsize())
+        print "queueNUm "+str(queue.qsize())
         try:
             record = queue.get(block=True, timeout=120)
+
+#            print record
             if record and ('geo' in record) and record['geo'] and ('coordinates' in record['geo']):
                 record['geo']['coordinates'] = record['geo']['coordinates'][::-1]
+#                print "record 1"
+#                print record['created_at']
                 record['created_at'] = formatTime(record['created_at'])
+#                print "record 2"
+#                print record['created_at']
                 try:
                     
-                    print record['created_at']
                     file_out.write(str(record['created_at']).encode('utf-8')+","+record['text'].encode('utf-8')+"\n")
                     print "write success"
                 except Exception, e:
+                    print "write exception"
                     print e
                     pass
             else:
                 time.sleep(3)
         except Exception, e:
+            print e
             goon = False
             
 def formatTime(starttime):
     return datetime.datetime.fromtimestamp(time.mktime(time.strptime(starttime, '%a %b %d %H:%M:%S +0800 %Y')))
+    
     
 config = open('config.yaml')
 params = yaml.load(config)
@@ -410,12 +428,16 @@ if __name__ == "__main__":
             dts.append(thread)
         except Exception, e:
             print e
+    for m in range(threadNum):
+        if dts[m].isAlive():
+            dts[m].join()
+    queue.join()
     
-    for thread in threads:
-        thread.join()
-        
-    for thread in dts:
-        thread.join()
+#    for thread in threads:
+#        thread.join()
+#        
+#    for thread in dts:
+#        thread.join()
 #        lock_index += 1
 #        GetText(point['lat'], point['long'], starttime, endtime)
     
